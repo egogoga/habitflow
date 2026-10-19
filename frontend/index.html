@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>HabitFlow</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: #333; }
+        .input-group { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        ul { list-style: none; padding: 0; }
+        li { display: flex; align-items: center; justify-content: space-between; padding: 10px; border-bottom: 1px solid #eee; }
+        li.completed span { text-decoration: line-through; color: #888; }
+        .done-btn { background: #28a745; margin-left: 10px; }
+        .done-btn:hover { background: #218838; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>HabitFlow</h1>
+        
+        <div class="input-group">
+            <input type="text" id="habit-title" placeholder="Название новой привычки...">
+            <button onclick="createHabit()">Добавить</button>
+        </div>
+
+        <ul id="habits-list"></ul>
+    </div>
+
+    <script>
+        const API_URL = "/api";
+
+        // Загрузить привычки
+        async function loadHabits() {
+            const res = await fetch(`${API_URL}/habits`);
+            const habits = await res.json();
+            const list = document.getElementById('habits-list');
+            list.innerHTML = '';
+            
+            habits.forEach(habit => {
+                const li = document.createElement('li');
+                if (habit.is_completed_today) li.classList.add('completed');
+                
+                li.innerHTML = `
+                    <span>${habit.title}</span>
+                    <button class="done-btn" onclick="toggleHabit(${habit.id})">
+                        ${habit.is_completed_today ? 'Отменить' : 'Выполнено'}
+                    </button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        // Создать привычку
+        async function createHabit() {
+            const title = document.getElementById('habit-title').value;
+            if (!title) return;
+
+            await fetch(`${API_URL}/habits`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: title })
+            });
+            
+            document.getElementById('habit-title').value = '';
+            loadHabits();
+        }
+
+        // Переключить статус
+        async function toggleHabit(id) {
+            await fetch(`${API_URL}/habits/${id}/complete`, { method: 'PUT' });
+            loadHabits();
+        }
+
+        // Загружаем при старте
+        loadHabits();
+    </script>
+</body>
+</html>
